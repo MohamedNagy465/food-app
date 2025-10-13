@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function Users() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
+    // تهيئة AOS عند تحميل المكون
+    AOS.init({ duration: 800, once: true });
+
     const savedUsers = JSON.parse(localStorage.getItem("users")) || [];
     setUsers(savedUsers);
   }, []);
@@ -17,7 +22,7 @@ function Users() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white rounded-lg shadow-md p-6" data-aos="fade-up">
       <h1 className="text-2xl font-bold mb-6 text-orange-600">👥 Manage Users</h1>
 
       {users.length === 0 ? (
@@ -37,6 +42,7 @@ function Users() {
               <tr
                 key={user.email}
                 className="border-t hover:bg-gray-50 transition"
+                data-aos="fade-up" // تأثير AOS لكل صف
               >
                 <td className="p-3">{index + 1}</td>
                 <td className="p-3">{user.email}</td>

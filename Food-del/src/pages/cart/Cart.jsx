@@ -1,10 +1,18 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { StoreContext } from "../../Context/StorContext";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function Cart() {
+  const navigate = useNavigate();
   const { cartItems, food_list, addToCart, removeFromCart, getCartTotal, user, setCartItems } =
     useContext(StoreContext);
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
   if (!user) {
     return (
@@ -45,6 +53,7 @@ function Cart() {
               return (
                 <div
                   key={key}
+                  data-aos="fade-up"
                   className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-b-0"
                 >
                   <div className="flex items-center gap-4">
@@ -84,14 +93,21 @@ function Cart() {
             <span className="text-2xl font-bold text-orange-500">${getCartTotal().toFixed(2)}</span>
           </div>
 
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-6 flex-wrap gap-4">
             <button
               onClick={clearCart}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-semibold"
             >
               Clear Cart
             </button>
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2 rounded-full font-semibold">
+            <button
+              onClick={() =>
+                navigate("/placeOrder", {
+                  state: { cartItems, totalPrice: getCartTotal() },
+                })
+              }
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2 rounded-full font-semibold"
+            >
               Proceed to Checkout
             </button>
           </div>

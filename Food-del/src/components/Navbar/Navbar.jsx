@@ -44,8 +44,8 @@ function Navbar() {
             <Link to="/mobileApp" className="hover:text-orange-500 transition">
               Mobile App
             </Link>
-            <Link to="/contact" className="hover:text-orange-500 transition">
-              Contact Us
+            <Link to="/placeOrder" className="hover:text-orange-500 transition">
+               Place Order
             </Link>
 
             {/* ✅ زر الأدمن يظهر فقط لو المستخدم أدمن */}
@@ -134,11 +134,11 @@ function Navbar() {
               Menu
             </Link>
             <Link
-              to="/mobileApp"
+              to="/placeOrder"
               className="hover:text-orange-500 transition"
               onClick={() => setMenuOpen(false)}
             >
-              Mobile App
+              Place Order
             </Link>
             <Link
               to="/contact"

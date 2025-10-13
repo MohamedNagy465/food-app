@@ -1,39 +1,55 @@
-import React, { useContext, useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { StoreContext } from "../../Context/StorContext";
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function Products() {
   const { food_list, products, addProduct, deleteProduct, updateProduct, updateFoodItem } =
     useContext(StoreContext);
 
-  const [newProduct, setNewProduct] = useState({ name: "", price: "", image: "" });
+  const [newProduct, setNewProduct] = useState({ name: "", price: "", image: "", description: "" });
   const [editingProduct, setEditingProduct] = useState(null);
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("❌ Please upload an image file!");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("⚠️ Image size should be under 2MB!");
-      return;
-    }
+    if (!file.type.startsWith("image/")) return toast.error("❌ Please upload an image!");
+    if (file.size > 2 * 1024 * 1024) return toast.error("⚠️ Max image size 2MB!");
     const reader = new FileReader();
     reader.onloadend = () => setNewProduct({ ...newProduct, image: reader.result });
     reader.readAsDataURL(file);
   };
 
-  const handleAddProduct = (e) => {
+  const handleAddOrEdit = (e) => {
     e.preventDefault();
-    if (!newProduct.name || !newProduct.price || !newProduct.image) {
-      toast.error("⚠️ Please fill all fields!");
-      return;
+    if (!newProduct.name || !newProduct.price || (!newProduct.image && !editingProduct)) {
+      return toast.error("⚠️ Please fill all fields!");
     }
 
-    addProduct({ ...newProduct, price: parseFloat(newProduct.price) });
-    setNewProduct({ name: "", price: "", image: "" });
+    const payload = {
+      ...newProduct,
+      price: parseFloat(newProduct.price),
+      description: newProduct.description || "",
+    };
+
+    if (editingProduct) {
+      const existsInProducts = products.some((p) => p.id === editingProduct.id);
+      if (existsInProducts) {
+        updateProduct(editingProduct.id, payload);
+      } else {
+        updateFoodItem(editingProduct.id || editingProduct._id, payload);
+      }
+      setEditingProduct(null);
+    } else {
+      addProduct(payload);
+    }
+
+    setNewProduct({ name: "", price: "", image: "", description: "" });
   };
 
   const handleEdit = (item) => {
@@ -42,56 +58,41 @@ function Products() {
       name: item.name,
       price: item.price,
       image: item.image || "",
+      description: item.description || "",
     });
   };
 
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
-    if (!newProduct.name || !newProduct.price) {
-      toast.error("⚠️ Please fill all fields!");
-      return;
-    }
-
-    if (products.find((p) => p.id === editingProduct.id)) {
-      updateProduct(editingProduct.id, { ...newProduct, price: parseFloat(newProduct.price) });
-    } else {
-      updateFoodItem(editingProduct.id || editingProduct._id, {
-        ...newProduct,
-        price: parseFloat(newProduct.price),
-      });
-    }
-
-    setEditingProduct(null);
-    setNewProduct({ name: "", price: "", image: "" });
-  };
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-6 rounded-lg shadow-md" data-aos="fade-up">
       <h1 className="text-2xl font-bold mb-6 text-orange-600">🛒 Manage All Products</h1>
 
-      <form
-        onSubmit={editingProduct ? handleSaveEdit : handleAddProduct}
-        className="flex flex-wrap gap-4 mb-6 items-center"
-      >
+      <form onSubmit={handleAddOrEdit} className="flex flex-wrap gap-4 mb-6 items-center" data-aos="fade-up">
         <input
           type="text"
           placeholder="Product name"
           value={newProduct.name}
           onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-          className="border px-3 py-2 rounded-md w-1/4 focus:border-orange-500 outline-none"
+          className="border px-3 py-2 rounded-md w-full sm:w-1/4 focus:border-orange-500 outline-none"
         />
         <input
           type="number"
           placeholder="Price"
           value={newProduct.price}
           onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-          className="border px-3 py-2 rounded-md w-1/4 focus:border-orange-500 outline-none"
+          className="border px-3 py-2 rounded-md w-full sm:w-1/4 focus:border-orange-500 outline-none"
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          value={newProduct.description}
+          onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+          className="border px-3 py-2 rounded-md w-full sm:w-1/4 focus:border-orange-500 outline-none"
         />
         <input
           type="file"
           accept="image/*"
           onChange={handleImageUpload}
-          className="border px-3 py-2 rounded-md w-1/4 cursor-pointer"
+          className="border px-3 py-2 rounded-md w-full sm:w-1/4 cursor-pointer"
         />
         <button
           type="submit"
@@ -114,6 +115,7 @@ function Products() {
             <th className="p-3 text-left">Image</th>
             <th className="p-3 text-left">Name</th>
             <th className="p-3 text-left">Price ($)</th>
+            <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Added At</th>
             <th className="p-3 text-center">Actions</th>
           </tr>
@@ -122,13 +124,14 @@ function Products() {
           {food_list.map((item, i) => {
             const isAdmin = products.some((p) => p.id === item.id);
             return (
-              <tr key={item.id || item._id} className="border-t hover:bg-gray-50 transition">
+              <tr key={item.id || item._id} className="border-t hover:bg-gray-50 transition" data-aos="fade-up">
                 <td className="p-3">{i + 1}</td>
                 <td className="p-3">
                   <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md border" />
                 </td>
-                <td className="p-3">{item.name}</td>
+                <td className="p-3 truncate max-w-[150px]">{item.name}</td>
                 <td className="p-3">${parseFloat(item.price).toFixed(2)}</td>
+                <td className="p-3 truncate max-w-[200px]">{item.description || "-"}</td>
                 <td className="p-3 text-sm text-gray-500">{item.createdAt || "Default"}</td>
                 <td className="p-3 text-center flex gap-2 justify-center">
                   <button

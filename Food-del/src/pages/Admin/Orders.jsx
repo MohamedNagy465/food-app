@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; 
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
 
-  // 🧩 تحميل الطلبات من localStorage
   useEffect(() => {
+    AOS.init({ duration: 600, once: true }); // تهيئة AOS
     const savedOrders = JSON.parse(localStorage.getItem("orders")) || [];
     setOrders(savedOrders);
   }, []);
 
-  // 💾 حفظ التحديثات
   const saveOrders = (updated) => {
     setOrders(updated);
     localStorage.setItem("orders", JSON.stringify(updated));
   };
 
-  // ✅ تغيير حالة الطلب
   const updateStatus = (id, newStatus) => {
     const updated = orders.map((order) =>
       order.id === id ? { ...order, status: newStatus } : order
@@ -25,7 +25,6 @@ function Orders() {
     toast.success(`✅ Order #${id} marked as ${newStatus}`);
   };
 
-  // 🗑️ حذف الطلب
   const deleteOrder = (id) => {
     const updated = orders.filter((o) => o.id !== id);
     saveOrders(updated);
@@ -50,10 +49,12 @@ function Orders() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
+            {orders.map((order, index) => (
               <tr
                 key={order.id}
                 className="border-t hover:bg-gray-50 transition"
+                data-aos="fade-up"
+                data-aos-delay={index * 100} // تأخير تدريجي لكل صف
               >
                 <td className="p-3 font-semibold text-gray-800">{order.id}</td>
                 <td className="p-3">{order.customer}</td>

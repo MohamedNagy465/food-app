@@ -1,16 +1,17 @@
-import React, { useContext, useState, useMemo } from "react";
+import React, { useContext, useState, useMemo, useEffect } from "react";
 import { StoreContext } from "../../Context/StorContext";
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function Menu() {
-  const { food_list, addToCart } = useContext(StoreContext); // استخدم food_list فقط
+  const { food_list, addToCart } = useContext(StoreContext);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 100]);
 
-  const allItems = food_list; // لا تدمج مع products مرة ثانية
-
+  const allItems = food_list;
   const allCategories = ["All", ...new Set(allItems.map((item) => item.category || "Others"))];
 
   const filteredFood = useMemo(() => {
@@ -35,15 +36,19 @@ function Menu() {
       style: { background: "#333", color: "#fff", borderRadius: "10px" },
     });
   };
-  
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
+
   return (
     <section className="container mx-auto px-6 py-30">
-      <h2 className="text-3xl font-bold text-center mb-8 text-orange-500">
+      <h2 className="text-3xl font-bold text-center mb-8 text-orange-500" data-aos="fade-up">
         🍽️ Our Menu
       </h2>
 
       {/* الفلاتر */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 flex-wrap" data-aos="fade-up">
         <input
           type="text"
           placeholder="Search for a dish..."
@@ -51,7 +56,6 @@ function Menu() {
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-1/3 focus:outline-none focus:border-orange-500"
         />
-
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -61,7 +65,6 @@ function Menu() {
             <option key={i} value={cat}>{cat}</option>
           ))}
         </select>
-
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-500">💲 Max Price:</label>
           <input
@@ -74,7 +77,6 @@ function Menu() {
           />
           <span className="text-sm text-gray-600">${priceRange[1]}</span>
         </div>
-
         <button
           onClick={resetFilters}
           className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
@@ -84,19 +86,23 @@ function Menu() {
       </div>
 
       {/* عدد النتائج */}
-      <p className="text-gray-600 text-sm mb-4 text-center">
+      <p className="text-gray-600 text-sm mb-4 text-center" data-aos="fade-up">
         Showing {filteredFood.length} dishes
       </p>
 
       {/* عرض النتائج */}
       {filteredFood.length === 0 ? (
-        <p className="text-center text-gray-500 mt-10">😔 No dishes match your filters.</p>
+        <p className="text-center text-gray-500 mt-10" data-aos="fade-up">
+          😔 No dishes match your filters.
+        </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredFood.map((item) => (
+          {filteredFood.map((item, index) => (
             <div
               key={item.id || item._id}
               className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4"
+              data-aos="fade-up"
+              data-aos-delay={index * 100}
             >
               <img
                 src={item.image}

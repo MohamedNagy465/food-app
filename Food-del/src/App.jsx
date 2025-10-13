@@ -13,8 +13,18 @@ import Users from "./pages/Admin/User";
 import Products from "./pages/Admin/Products";
 import Orders from "./pages/Admin/Orders";
 import DishBoard from "./pages/Admin/DishBoard";
+import PlaceOrder from "./pages/PlaceOrder/PlaceOrder";
+import { useEffect } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 function App() {
+    useEffect(() => {
+    AOS.init({
+      duration: 1000, // مدة الحركة بالملي ثانية
+      once: true, // تشغل التأثير مرة واحدة فقط
+    });
+  }, []);
   const router = createBrowserRouter([
     {
       path: "/",
@@ -23,6 +33,7 @@ function App() {
         { index: true, element: <Home /> },
         { path: "menu", element: <Menu /> },
         { path: "cart", element: <Cart /> },
+        { path: "placeOrder", element: <PlaceOrder />},
         { path: "mobileApp", element: <MobileApp /> },
       ],
     },

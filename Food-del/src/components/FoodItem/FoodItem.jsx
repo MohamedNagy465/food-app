@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext } from "react"; 
 import { StoreContext } from "../../Context/StorContext";
 import { assets } from "../../assets/frontend_assets/assets";
 
@@ -10,7 +10,7 @@ const FoodItem = ({ id, name, price, image, description }) => {
     <div
       key={id}
       className="bg-white shadow-md rounded-2xl overflow-hidden hover:shadow-xl hover:scale-105 transition-transform duration-300
-                 w-full sm:w-[250px] mx-auto"
+                 w-full sm:w-[250px] mx-auto flex flex-col"
     >
       {/* صورة الوجبة */}
       <img
@@ -20,22 +20,28 @@ const FoodItem = ({ id, name, price, image, description }) => {
       />
 
       {/* المحتوى */}
-      <div className="p-3 sm:p-4 text-left">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-800">{name}</h3>
-          <img src={assets.rating_starts} alt="rating" className="h-3 sm:h-4" />
+      <div className="p-3 sm:p-4 flex flex-col justify-between flex-1">
+        {/* اسم + تقييم */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
+              {name}
+            </h3>
+            <img src={assets.rating_starts} alt="rating" className="h-3 sm:h-4" />
+          </div>
+
+          {/* الوصف */}
+          <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 h-10">
+            {description}
+          </p>
         </div>
 
-        <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">
-          {description}
-        </p>
-
-        <div className="flex items-center justify-between">
+        {/* السعر وأزرار العدد */}
+        <div className="flex items-center justify-between mt-auto">
           <span className="text-orange-500 font-bold text-base sm:text-lg">
             ${price}
           </span>
 
-          {/* أزرار العدد */}
           {itemCount === 0 ? (
             <button
               onClick={() => addToCart(id)}

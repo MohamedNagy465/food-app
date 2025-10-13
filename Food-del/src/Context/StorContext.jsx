@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useMemo } from "react";
+import React, { createContext, useState, useEffect, useMemo } from "react"; 
 import { food_list as defaultFoodList } from "../assets/frontend_assets/assets";
 import toast from "react-hot-toast";
 
@@ -12,7 +12,10 @@ const StoreContextProvider = ({ children }) => {
 
   const [cartItems, setCartItems] = useState({});
   const [products, setProducts] = useState([]);
-  const [foodList, setFoodList] = useState(defaultFoodList);
+  const [foodList, setFoodList] = useState(() => {
+    const savedFood = localStorage.getItem("foodList");
+    return savedFood ? JSON.parse(savedFood) : defaultFoodList;
+  });
 
   // تحميل منتجات الأدمن
   useEffect(() => {
@@ -23,6 +26,11 @@ const StoreContextProvider = ({ children }) => {
   const saveProducts = (updated) => {
     setProducts(updated);
     localStorage.setItem("products", JSON.stringify(updated));
+  };
+
+  const saveFoodList = (updated) => {
+    setFoodList(updated);
+    localStorage.setItem("foodList", JSON.stringify(updated));
   };
 
   const generateUniqueId = () => `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -49,27 +57,18 @@ const StoreContextProvider = ({ children }) => {
   };
 
   const updateFoodItem = (id, updatedData) => {
-    setFoodList((prev) =>
-      prev.map((item) => (item.id === id || item._id === id ? { ...item, ...updatedData } : item))
+    const updatedList = foodList.map((item) =>
+      item.id === id || item._id === id ? { ...item, ...updatedData } : item
     );
+    saveFoodList(updatedList);
     toast.success("✅ Food item updated!");
   };
 
   // دمج foodList و products بشكل آمن لكل عنصر فريد
   const allFoodItems = useMemo(() => {
     const map = new Map();
-
-    // أضف كل عناصر foodList
-    foodList.forEach((item) => {
-      map.set(item.id || item._id || generateUniqueId(), { ...item });
-    });
-
-    // أضف أو حدث منتجات الأدمن
-    products.forEach((p) => {
-      const key = p.id || generateUniqueId();
-      map.set(key, { ...p });
-    });
-
+    foodList.forEach((item) => map.set(item.id || item._id || generateUniqueId(), { ...item }));
+    products.forEach((p) => map.set(p.id || generateUniqueId(), { ...p }));
     return Array.from(map.values());
   }, [foodList, products]);
 
@@ -140,7 +139,7 @@ const StoreContextProvider = ({ children }) => {
   return (
     <StoreContext.Provider
       value={{
-        food_list: allFoodItems, // هذا الآن ديناميكي ويحدث render في Home و Menu
+        food_list: allFoodItems,
         foodList,
         updateFoodItem,
         products,
