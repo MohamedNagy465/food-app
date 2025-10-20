@@ -94,7 +94,7 @@ function Footer() {
       {/* 🔸 حقوق النشر */}
       <div className="border-t border-gray-700 mt-10 pt-6 text-center text-sm text-gray-500">
         © {new Date().getFullYear()}{" "}
-        <span className="text-orange-500 font-semibold">Yummy Dishes</span> — All Rights Reserved.
+        <span className="text-orange-500 font-semibold">Food Del</span> — All Rights Reserved.
       </div>
     </footer>
   );
