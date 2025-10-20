@@ -141,11 +141,11 @@
                 Track Orders
               </Link>
               <Link
-                to="/contact"
+                to="/mobileApp"
                 className="hover:text-orange-500 transition"
                 onClick={() => setMenuOpen(false)}
               >
-                Contact Us
+                Mobile App
               </Link>
 
               {/* ✅ Dashboard للموبايل */}
