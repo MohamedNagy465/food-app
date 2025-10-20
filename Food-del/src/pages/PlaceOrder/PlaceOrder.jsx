@@ -1,21 +1,28 @@
-import React, { useState, useContext, useMemo, useEffect } from "react"; 
+import React, { useState, useMemo, useContext, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { StoreContext } from "../../Context/StorContext";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
 function PlaceOrder() {
-  const { cartItems, food_list, setCartItems } = useContext(StoreContext);
+  const { setCartItems, food_list = [] } = useContext(StoreContext);
+  const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    AOS.init({ duration: 800, once: true });
-  }, []);
+  const { cartItems = {}, totalPrice } = location.state || {};
 
-  const productsInCart = useMemo(() => {
-    return food_list.filter((item) => cartItems[item._id] || cartItems[item.id]);
-  }, [cartItems, food_list]);
+  // 🔁 Redirect if cart is empty
+  useEffect(() => {
+    if (!cartItems || Object.keys(cartItems).length === 0) {
+      navigate("/");
+    }
+  }, [cartItems, navigate]);
+
+  const productsInCart = useMemo(
+    () => food_list.filter((item) => cartItems[item._id] || cartItems[item.id]),
+    [cartItems, food_list]
+  );
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -23,72 +30,70 @@ function PlaceOrder() {
     phone: "",
     address: "",
   });
+
   const [errors, setErrors] = useState({});
 
-  const totalPrice = productsInCart.reduce((total, item) => {
-    const quantity = cartItems[item._id] || cartItems[item.id];
-    return total + item.price * quantity;
-  }, 0);
-
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
   const handleChange = (e) => {
-    setCustomer({ ...customer, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: "" });
+    const { name, value } = e.target;
+
+    // ✅ Allow only letters in the name
+    if (name === "name") {
+      if (/^[a-zA-Z\s]*$/.test(value)) {
+        setCustomer({ ...customer, [name]: value });
+      }
+    } else {
+      setCustomer({ ...customer, [name]: value });
+    }
+
+    setErrors({ ...errors, [name]: "" });
   };
 
   const validate = () => {
     const newErrors = {};
-    if (!customer.name) newErrors.name = "الاسم مطلوب";
-    if (!customer.email) newErrors.email = "البريد الإلكتروني مطلوب";
-    else if (!/\S+@\S+\.\S+/.test(customer.email)) newErrors.email = "البريد الإلكتروني غير صالح";
-    if (!customer.phone) newErrors.phone = "رقم الهاتف مطلوب";
-    if (!customer.address) newErrors.address = "العنوان مطلوب";
+
+    if (!customer.name.trim()) {
+      newErrors.name = "Name is required";
+    } else if (!/^[A-Za-z\s]+$/.test(customer.name)) {
+      newErrors.name = "Name must contain letters only";
+    }
+
+    if (!customer.email.trim()) {
+      newErrors.email = "Email is required";
+    }
+
+    if (!customer.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^01[0|1|2|5][0-9]{8}$/.test(customer.phone)) {
+      newErrors.phone = "Enter a valid Egyptian phone number";
+    }
+
+    if (!customer.address.trim()) {
+      newErrors.address = "Address is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handlePlaceOrder = async () => {
-    if (productsInCart.length === 0) {
-      toast.error("❌ لا توجد منتجات في العربة، لا يمكن تقديم الطلب!");
+  const handlePlaceOrder = () => {
+    if (!validate()) return;
+
+    const loggedUser = JSON.parse(localStorage.getItem("user"));
+    if (!loggedUser) {
+      toast.error("⚠️ Please log in to confirm your order.");
       return;
     }
 
-    if (!validate()) return;
-
-    // ✅ Toast confirm
-    const confirm = await new Promise((resolve) => {
-      toast.custom((t) => (
-        <div className="bg-white p-4 rounded shadow flex flex-col gap-2">
-          <p className="font-semibold">هل أنت متأكد من تقديم الطلب؟</p>
-          <div className="flex gap-2 justify-end mt-2">
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(true); }}
-              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-            >
-              نعم
-            </button>
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(false); }}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            >
-              لا
-            </button>
-          </div>
-        </div>
-      ), { duration: Infinity });
-    });
-
-    if (!confirm) return;
-
     const savedOrders = JSON.parse(localStorage.getItem("orders")) || [];
+
     const newOrder = {
       id: Date.now(),
-      customer: customer.name,
+      customer: loggedUser.name || loggedUser.email.split("@")[0],
+      customerEmail: loggedUser.email,
       total: totalPrice,
       status: "Pending",
       items: productsInCart.map((item) => ({
@@ -100,58 +105,55 @@ function PlaceOrder() {
     };
 
     localStorage.setItem("orders", JSON.stringify([...savedOrders, newOrder]));
-    toast.success("✅ تم تقديم الطلب بنجاح!");
     setCartItems({});
-    navigate("/dashboard/orders");
+    toast.success("✅ Order placed successfully!");
+    navigate("/OrderSuccess", { state: { orderId: newOrder.id } });
+    window.dispatchEvent(new Event("ordersUpdated"));
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
-      <h2 className="text-2xl font-bold mb-6 text-center">تأكيد الطلب</h2>
+    <div className="max-w-4xl mx-auto p-8 bg-white shadow-xl rounded-2xl mt-10 border border-gray-100">
+      <h2 className="text-3xl font-bold mb-8 text-center text-orange-600">
+        🛒 Confirm Your Order
+      </h2>
 
-      <button
-        onClick={() => navigate("/")}
-        className="mb-6 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition"
-      >
-        ← الرجوع للموقع
-      </button>
-
-      {productsInCart.length === 0 ? (
-        <p className="text-center text-red-500 font-semibold">
-          لا توجد منتجات في العربة للطلب.
-        </p>
-      ) : (
+      {productsInCart.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             {productsInCart.map((item) => {
               const quantity = cartItems[item._id] || cartItems[item.id];
               return (
                 <div
                   key={item._id || item.id}
                   data-aos="fade-up"
-                  className="border rounded-lg p-4 shadow hover:shadow-lg transition flex flex-col items-center"
+                  className="border border-gray-200 rounded-xl p-5 shadow-md hover:shadow-lg transition-all bg-gray-50"
                 >
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-32 h-32 object-cover rounded-lg mb-3"
+                    className="w-32 h-32 object-cover rounded-lg mx-auto mb-4"
                   />
-                  <h3 className="font-semibold text-lg">{item.name}</h3>
-                  <p className="text-orange-500 font-bold">{formatter.format(item.price)}</p>
-                  <p>الكمية: {quantity}</p>
-                  <p className="mt-2 font-semibold">
-                    الإجمالي: {formatter.format(item.price * quantity)}
+                  <h3 className="font-semibold text-lg text-center text-gray-800">
+                    {item.name}
+                  </h3>
+                  <p className="text-orange-500 font-bold text-center">
+                    ${item.price}
+                  </p>
+                  <p className="text-center text-gray-600">Qty: {quantity}</p>
+                  <p className="text-center font-semibold mt-2 text-gray-700">
+                    Total: ${item.price * quantity}
                   </p>
                 </div>
               );
             })}
           </div>
 
-          <h3 className="text-xl font-bold mb-6 text-right">
-            الإجمالي الكلي: {formatter.format(totalPrice)}
+          <h3 className="text-xl font-bold mb-6 text-right text-gray-800">
+            Grand Total:{" "}
+            <span className="text-orange-600">${totalPrice}</span>
           </h3>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-5 mb-8">
             {["name", "email", "phone", "address"].map((field) => (
               <div key={field}>
                 {field !== "address" ? (
@@ -160,48 +162,51 @@ function PlaceOrder() {
                     name={field}
                     placeholder={
                       field === "name"
-                        ? "الاسم الكامل"
+                        ? "Full Name (letters only)"
                         : field === "email"
-                        ? "البريد الإلكتروني"
-                        : field === "phone"
-                        ? "رقم الهاتف"
-                        : "العنوان"
+                        ? "Email Address"
+                        : "Phone Number (Egypt only)"
                     }
                     value={customer[field]}
                     onChange={handleChange}
                     className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                      errors[field] ? "border-red-500 focus:ring-red-400" : "focus:ring-green-400"
+                      errors[field]
+                        ? "border-red-500 focus:ring-red-400"
+                        : "focus:ring-orange-400"
                     }`}
                   />
                 ) : (
                   <textarea
                     name="address"
-                    placeholder="العنوان"
+                    placeholder="Shipping Address"
                     value={customer.address}
                     onChange={handleChange}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                      errors.address ? "border-red-500 focus:ring-red-400" : "focus:ring-green-400"
-                    }`}
                     rows="3"
+                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                      errors.address
+                        ? "border-red-500 focus:ring-red-400"
+                        : "focus:ring-orange-400"
+                    }`}
                   />
                 )}
-                {errors[field] && <p className="text-red-500 text-sm">{errors[field]}</p>}
+                {errors[field] && (
+                  <p className="text-red-500 text-sm mt-1">{errors[field]}</p>
+                )}
               </div>
             ))}
           </div>
 
           <button
             onClick={handlePlaceOrder}
-            disabled={productsInCart.length === 0}
-            className={`w-full py-3 rounded-lg font-semibold transition-colors cursor-pointer text-white ${
-              productsInCart.length === 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600"
-            }`}
+            className="w-full py-3 rounded-lg font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-md"
           >
-            تأكيد الطلب
+            Confirm Order
           </button>
         </>
+      ) : (
+        <p className="text-center text-gray-600 text-lg">
+          You have not placed any orders yet. Please add items to your cart.
+        </p>
       )}
     </div>
   );

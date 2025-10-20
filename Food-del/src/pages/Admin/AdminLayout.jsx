@@ -1,7 +1,7 @@
 import React, {  } from "react";
 import { Outlet,  } from "react-router-dom";
 import Sidebar from "../../components/dishborad/SideBar/Sidebar";
-import Navber from "../../components/dishborad/SideBar/Navber/Navber";
+import NavberDish from "../../components/dishborad/SideBar/NavberDish/NavberDish";
 
 
 function AdminLayout() {
@@ -21,7 +21,7 @@ function AdminLayout() {
       <div className="flex-1 flex flex-col">
         {/* Top Navbar */}
 
-        <Navber />
+        <NavberDish />
 
         {/* Main Content */}
         <main className="flex-1 p-8 overflow-y-auto">

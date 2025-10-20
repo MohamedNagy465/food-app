@@ -17,6 +17,8 @@ import PlaceOrder from "./pages/PlaceOrder/PlaceOrder";
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import OrderSuccess from "./pages/OrderSuccess/OrderSuccess";
+import TrackOrders from "./pages/TrackOrders/TrackOrders";
 
 function App() {
     useEffect(() => {
@@ -35,6 +37,8 @@ function App() {
         { path: "cart", element: <Cart /> },
         { path: "placeOrder", element: <PlaceOrder />},
         { path: "mobileApp", element: <MobileApp /> },
+        { path: "OrderSuccess", element: <OrderSuccess/> },
+        { path: "trackOrders", element: <TrackOrders/> },
       ],
     },
     {

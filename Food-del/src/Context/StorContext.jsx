@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useMemo } from "react"; 
+import React, { createContext, useState, useEffect, useMemo } from "react";
 import { food_list as defaultFoodList } from "../assets/frontend_assets/assets";
 import toast from "react-hot-toast";
 
@@ -33,10 +33,13 @@ const StoreContextProvider = ({ children }) => {
     localStorage.setItem("foodList", JSON.stringify(updated));
   };
 
-  const generateUniqueId = () => `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const generateUniqueId = () =>
+    `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
   const addProduct = (product) => {
-    const exists = products.find((p) => p.name.toLowerCase() === product.name.toLowerCase());
+    const exists = products.find(
+      (p) => p.name.toLowerCase() === product.name.toLowerCase()
+    );
     if (exists) {
       toast.error("⚠️ This product already exists!");
       return;
@@ -52,7 +55,9 @@ const StoreContextProvider = ({ children }) => {
   };
 
   const updateProduct = (id, updatedData) => {
-    saveProducts(products.map((p) => (p.id === id ? { ...p, ...updatedData } : p)));
+    saveProducts(
+      products.map((p) => (p.id === id ? { ...p, ...updatedData } : p))
+    );
     toast.success("✅ Product updated!");
   };
 
@@ -64,15 +69,17 @@ const StoreContextProvider = ({ children }) => {
     toast.success("✅ Food item updated!");
   };
 
-  // دمج foodList و products بشكل آمن لكل عنصر فريد
+  // دمج foodList و products
   const allFoodItems = useMemo(() => {
     const map = new Map();
-    foodList.forEach((item) => map.set(item.id || item._id || generateUniqueId(), { ...item }));
+    foodList.forEach((item) =>
+      map.set(item.id || item._id || generateUniqueId(), { ...item })
+    );
     products.forEach((p) => map.set(p.id || generateUniqueId(), { ...p }));
     return Array.from(map.values());
   }, [foodList, products]);
 
-  // مزامنة السلة عند تغير المستخدم
+  // تحميل السلة الخاصة بالمستخدم الحالي
   useEffect(() => {
     if (!user) {
       setCartItems({});
@@ -82,6 +89,7 @@ const StoreContextProvider = ({ children }) => {
     setCartItems(savedCarts[user.email] || {});
   }, [user]);
 
+  // حفظ السلة عند التحديث
   useEffect(() => {
     if (!user) return;
     const savedCarts = JSON.parse(localStorage.getItem("userCarts")) || {};
@@ -109,7 +117,17 @@ const StoreContextProvider = ({ children }) => {
     });
   };
 
-  const getCartCount = () => Object.values(cartItems).reduce((acc, curr) => acc + curr, 0);
+  const clearCart = () => {
+    if (!user) return;
+    setCartItems({});
+    const savedCarts = JSON.parse(localStorage.getItem("userCarts")) || {};
+    savedCarts[user.email] = {};
+    localStorage.setItem("userCarts", JSON.stringify(savedCarts));
+    toast.success("🗑️ Cart cleared!");
+  };
+
+  const getCartCount = () =>
+    Object.values(cartItems).reduce((acc, curr) => acc + curr, 0);
 
   const getCartTotal = () =>
     Object.entries(cartItems).reduce((total, [id, count]) => {
@@ -155,6 +173,8 @@ const StoreContextProvider = ({ children }) => {
         setUser,
         login,
         logout,
+        setCartItems,
+        clearCart, 
       }}
     >
       {children}

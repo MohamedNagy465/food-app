@@ -5,40 +5,47 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 
 function Menu() {
-  const { food_list, addToCart } = useContext(StoreContext);
-
+  const { food_list = [], addToCart } = useContext(StoreContext);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 100]);
+  const [loadingItem, setLoadingItem] = useState(null);
 
-  const allItems = food_list;
-  const allCategories = ["All", ...new Set(allItems.map((item) => item.category || "Others"))];
+  const allCategories = ["All", ...new Set(food_list.map((i) => i.category || "Others"))];
 
-  const filteredFood = useMemo(() => {
-    return allItems.filter((item) => {
-      const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
-      const matchCategory = category === "All" || item.category === category;
-      const matchPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
-      return matchSearch && matchCategory && matchPrice;
-    });
-  }, [allItems, search, category, priceRange]);
+  const filteredFood = useMemo(
+    () =>
+      food_list.filter(
+        (i) =>
+          i.name.toLowerCase().includes(search.toLowerCase()) &&
+          (category === "All" || i.category === category) &&
+          i.price >= priceRange[0] &&
+          i.price <= priceRange[1]
+      ),
+    [food_list, search, category, priceRange]
+  );
 
-  const handleAddToCart = (id) => {
-    addToCart(id);
+  const handleSearch = (e) => {
+    const val = e.target.value;
+    if (/^[a-zA-Z\u0600-\u06FF\s]*$/.test(val)) setSearch(val);
+    else toast.error("❌ Letters only!");
   };
 
-  const resetFilters = () => {
-    setSearch("");
-    setCategory("All");
-    setPriceRange([0, 100]);
-    toast("🔄 Filters reset!", {
-      icon: "✅",
-      style: { background: "#333", color: "#fff", borderRadius: "10px" },
-    });
+  const handleAddToCart = async (id) => {
+    setLoadingItem(id);
+    await new Promise((res) => setTimeout(res, 1000));
+    addToCart(id);
+    setLoadingItem(null);
   };
 
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
+    // Cleanup عند unmount لتجنب مشاكل destroy
+    return () => {
+      if (AOS && typeof AOS.refreshHard === "function") {
+        AOS.refreshHard();
+      }
+    };
   }, []);
 
   return (
@@ -47,13 +54,12 @@ function Menu() {
         🍽️ Our Menu
       </h2>
 
-      {/* الفلاتر */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 flex-wrap" data-aos="fade-up">
         <input
           type="text"
-          placeholder="Search for a dish..."
+          placeholder="Search..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearch}
           className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-1/3 focus:outline-none focus:border-orange-500"
         />
         <select
@@ -61,62 +67,78 @@ function Menu() {
           onChange={(e) => setCategory(e.target.value)}
           className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500"
         >
-          {allCategories.map((cat, i) => (
-            <option key={i} value={cat}>{cat}</option>
+          {allCategories.map((c, i) => (
+            <option key={i} value={c}>{c}</option>
           ))}
         </select>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-500">💲 Max Price:</label>
+          <label className="text-sm text-gray-500">💲 Max:</label>
           <input
             type="range"
             min="0"
             max="100"
             value={priceRange[1]}
-            onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+            onChange={(e) => setPriceRange([0, +e.target.value])}
             className="w-40 accent-orange-500"
           />
           <span className="text-sm text-gray-600">${priceRange[1]}</span>
         </div>
         <button
-          onClick={resetFilters}
+          onClick={() => {
+            setSearch("");
+            setCategory("All");
+            setPriceRange([0, 100]);
+            toast.success("✅ Reset done!");
+          }}
           className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
         >
-          Reset Filters
+          Reset
         </button>
       </div>
 
-      {/* عدد النتائج */}
       <p className="text-gray-600 text-sm mb-4 text-center" data-aos="fade-up">
         Showing {filteredFood.length} dishes
       </p>
 
-      {/* عرض النتائج */}
       {filteredFood.length === 0 ? (
         <p className="text-center text-gray-500 mt-10" data-aos="fade-up">
-          😔 No dishes match your filters.
+          😔 No dishes found.
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredFood.map((item, index) => (
+          {filteredFood.map((i, idx) => (
             <div
-              key={item.id || item._id}
+              key={i.id || i._id}
               className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4"
               data-aos="fade-up"
-              data-aos-delay={index * 100}
+              data-aos-delay={idx * 100}
             >
               <img
-                src={item.image}
-                alt={item.name}
+                src={i.image}
+                alt={i.name}
                 className="rounded-lg h-48 w-full object-cover mb-3"
               />
-              <h3 className="text-lg font-semibold">{item.name}</h3>
-              <p className="text-gray-500 text-sm">{item.category}</p>
-              <p className="text-orange-500 font-bold mt-2">${item.price}</p>
+              <h3 className="text-lg font-semibold">{i.name}</h3>
+              <p className="text-gray-500 text-sm">{i.category}</p>
+              <p className="text-orange-500 font-bold mt-2">${i.price}</p>
+
               <button
-                onClick={() => handleAddToCart(item.id || item._id)}
-                className="mt-3 w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition"
+                onClick={() => handleAddToCart(i.id || i._id)}
+                disabled={loadingItem === (i.id || i._id)}
+                className={`mt-3 w-full bg-orange-500 text-white py-2 rounded-lg transition ${
+                  loadingItem === (i.id || i._id)
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:bg-orange-600"
+                }`}
               >
-                Add to Cart 🛒
+                {loadingItem === (i.id || i._id) ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Adding...
+                  </span>
+                ) : (
+                  "Add to Cart 🛒"
+                )}
               </button>
             </div>
           ))}

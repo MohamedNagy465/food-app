@@ -1,14 +1,20 @@
 import React, { useContext, useEffect } from "react";
 import { StoreContext } from "../../Context/StorContext";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
 function Cart() {
   const navigate = useNavigate();
-  const { cartItems, food_list, addToCart, removeFromCart, getCartTotal, user, setCartItems } =
-    useContext(StoreContext);
+  const {
+    cartItems,
+    food_list,
+    addToCart,
+    removeFromCart,
+    getCartTotal,
+    user,
+    clearCart
+  } = useContext(StoreContext);
 
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
@@ -25,16 +31,25 @@ function Cart() {
     );
   }
 
-  const cartProducts = food_list.filter((item) => cartItems[item._id] || cartItems[item.id]);
-
-  const clearCart = () => {
-    setCartItems({});
-    toast.success("🗑️ Cart cleared!");
-  };
+  const cartProducts = food_list.filter(
+    (item) => cartItems[item._id] || cartItems[item.id]
+  );
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center">🛒 Your Cart</h2>
+      <h2
+        className="text-3xl font-bold text-gray-800 mb-2 text-center"
+        data-aos="fade-up"
+      >
+        🛒 Your Cart
+      </h2>
+      <p
+        className="text-center text-gray-500 mb-6"
+        data-aos="fade-up"
+        data-aos-delay="100"
+      >
+        Welcome back, <span className="text-orange-500 font-semibold">{user.name}</span> 👋
+      </p>
 
       {cartProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -63,8 +78,12 @@ function Cart() {
                       className="w-20 h-20 rounded-xl object-cover shadow-sm"
                     />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
-                      <p className="text-orange-500 font-medium mt-1">${item.price.toFixed(2)}</p>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {item.name}
+                      </h3>
+                      <p className="text-orange-500 font-medium mt-1">
+                        ${item.price.toFixed(2)}
+                      </p>
                     </div>
                   </div>
 
@@ -75,7 +94,9 @@ function Cart() {
                     >
                       -
                     </button>
-                    <span className="font-semibold text-gray-700 text-lg">{cartItems[key]}</span>
+                    <span className="font-semibold text-gray-700 text-lg">
+                      {cartItems[key]}
+                    </span>
                     <button
                       onClick={() => addToCart(key)}
                       className="bg-orange-500 hover:bg-orange-600 text-white w-8 h-8 rounded-full text-lg flex items-center justify-center"
@@ -90,7 +111,9 @@ function Cart() {
 
           <div className="flex items-center justify-between mt-6 border-t pt-6">
             <h3 className="text-xl font-semibold text-gray-800">Total</h3>
-            <span className="text-2xl font-bold text-orange-500">${getCartTotal().toFixed(2)}</span>
+            <span className="text-2xl font-bold text-orange-500">
+              ${getCartTotal().toFixed(2)}
+            </span>
           </div>
 
           <div className="flex justify-between mt-6 flex-wrap gap-4">
